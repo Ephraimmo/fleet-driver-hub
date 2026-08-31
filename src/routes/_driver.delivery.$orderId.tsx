@@ -113,11 +113,11 @@ function ActiveDelivery() {
     { key: "delivered", label: "Delivered" },
   ];
 
-  const progress = useMemo(() => {
-    const order = ["assigned", "arrived_at_restaurant", "picked_up", "on_the_way", "arrived_at_customer", "delivered"];
-    const idx = order.indexOf(vm.driverStatus);
+  const progress = (() => {
+    const seq = ["assigned", "arrived_at_restaurant", "picked_up", "on_the_way", "arrived_at_customer", "delivered"];
+    const idx = seq.indexOf(vm.driverStatus);
     return idx === -1 ? 0 : idx;
-  }, [vm.driverStatus]);
+  })();
 
   const run = async (fn: () => Promise<void>, success: string) => {
     setBusy(true);
