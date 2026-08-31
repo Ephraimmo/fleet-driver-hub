@@ -1,6 +1,6 @@
 import { createFileRoute, useParams } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
-import { Phone, MessageSquare, Navigation2, Store, User, ShieldCheck, Loader2, CheckCircle2, Circle, MapPin, Package } from "lucide-react";
+import { Phone, MessageSquare, Store, User, ShieldCheck, Loader2, CheckCircle2, Circle, MapPin, Package } from "lucide-react";
 import { toast } from "sonner";
 import {
   subscribeOrder,
@@ -16,6 +16,7 @@ import { useAuthDriver } from "@/hooks/useAuthDriver";
 import { useAppStore } from "@/stores/appStore";
 import { MapPanel, type MapMarker } from "@/components/driver/MapPanel";
 import { StatusPill } from "@/components/driver/StatusPill";
+import { NavigateButton } from "@/components/driver/NavigateButton";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -89,10 +90,13 @@ function ActiveDelivery() {
   if (driver && vm.driverId && vm.driverId !== driver.id)
     return <p className="surface-card p-6 text-center">This delivery is assigned to another driver.</p>;
 
-  const target =
-    vm.driverStatus === "picked_up" || vm.driverStatus === "on_the_way" || vm.driverStatus === "arrived_at_customer"
-      ? vm.deliveryAddress
-      : { latitude: vm.branch.latitude, longitude: vm.branch.longitude };
+  const headingToCustomer =
+    vm.driverStatus === "picked_up" ||
+    vm.driverStatus === "on_the_way" ||
+    vm.driverStatus === "arrived_at_customer";
+  const target = headingToCustomer
+    ? vm.deliveryAddress
+    : { latitude: vm.branch.latitude, longitude: vm.branch.longitude };
   const distance =
     position && target.latitude && target.longitude
       ? haversineKm(position, { latitude: target.latitude, longitude: target.longitude })
@@ -158,11 +162,6 @@ function ActiveDelivery() {
       }
     }
   };
-
-  const navUrl =
-    target.latitude && target.longitude
-      ? `https://www.google.com/maps/dir/?api=1&destination=${target.latitude},${target.longitude}&travelmode=driving`
-      : null;
 
   return (
     <div className="space-y-4 pb-8">
@@ -232,21 +231,35 @@ function ActiveDelivery() {
 
       <MapPanel markers={markers} className="h-64 w-full overflow-hidden rounded-xl" />
 
-      <div className="grid grid-cols-3 gap-2">
-        <Button asChild variant="outline" size="lg" className="h-14" disabled={!navUrl}>
-          <a href={navUrl ?? "#"} target="_blank" rel="noreferrer">
-            <Navigation2 className="size-5" />
-          </a>
-        </Button>
-        <Button asChild variant="outline" size="lg" className="h-14">
+      <NavigateButton
+        variant="default"
+        className="h-16 w-full text-lg shadow-elevate"
+        label={headingToCustomer ? "Open Google Maps — to customer" : "Open Google Maps — to restaurant"}
+        destination={{
+          latitude: target.latitude,
+          longitude: target.longitude,
+          address: headingToCustomer
+            ? [vm.deliveryAddress.street, vm.deliveryAddress.city].filter(Boolean).join(", ")
+            : `${vm.restaurant.name} ${vm.branch.name}`,
+        }}
+      />
+
+      <div className="grid grid-cols-2 gap-2">
+        <Button asChild variant="outline" size="lg" className="h-14 gap-2 font-semibold">
           <a href={`tel:${vm.customer.phone}`}>
-            <Phone className="size-5" />
+            <Phone className="size-5" /> Call customer
           </a>
         </Button>
-        <Button variant="outline" size="lg" className="h-14" onClick={() => document.getElementById("chat")?.scrollIntoView({ behavior: "smooth" })}>
-          <MessageSquare className="size-5" />
+        <Button
+          variant="outline"
+          size="lg"
+          className="h-14 gap-2 font-semibold"
+          onClick={() => document.getElementById("chat")?.scrollIntoView({ behavior: "smooth" })}
+        >
+          <MessageSquare className="size-5" /> Message
         </Button>
       </div>
+
 
       <section className="surface-card space-y-2 p-4 shadow-elevate">
         <h2 className="flex items-center gap-2 font-display text-lg font-bold">

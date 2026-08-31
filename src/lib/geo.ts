@@ -32,3 +32,40 @@ export function formatMoney(value?: number | null) {
   const n = typeof value === "number" && isFinite(value) ? value : 0;
   return `R${n.toFixed(2)}`;
 }
+
+export interface MapDestination {
+  latitude?: number | null | undefined;
+  longitude?: number | null | undefined;
+  address?: string | null | undefined;
+}
+
+/** Build a Google Maps directions URL (works on web, and deep-links into the app on mobile). */
+export function directionsUrl(dest: MapDestination, origin?: GeoPoint | null): string | null {
+  const hasCoords =
+    typeof dest.latitude === "number" &&
+    typeof dest.longitude === "number" &&
+    isFinite(dest.latitude) &&
+    isFinite(dest.longitude);
+  const destination = hasCoords
+    ? `${dest.latitude},${dest.longitude}`
+    : dest.address?.trim()
+      ? dest.address.trim()
+      : null;
+  if (!destination) return null;
+  const params = new URLSearchParams({
+    api: "1",
+    destination,
+    travelmode: "driving",
+    dir_action: "navigate",
+  });
+  if (origin) params.set("origin", `${origin.latitude},${origin.longitude}`);
+  return `https://www.google.com/maps/dir/?${params.toString()}`;
+}
+
+/** Launch Google Maps navigation in a new tab / the native app. */
+export function openDirections(dest: MapDestination, origin?: GeoPoint | null): boolean {
+  const url = directionsUrl(dest, origin);
+  if (!url || typeof window === "undefined") return false;
+  window.open(url, "_blank", "noopener,noreferrer");
+  return true;
+}
