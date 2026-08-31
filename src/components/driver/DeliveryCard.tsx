@@ -35,7 +35,12 @@ export function DeliveryCard({
   const pickupKm = position && pickupPoint ? haversineKm(position, pickupPoint) : null;
   const earnings = order.deliveryFee + order.tip;
   const stepHint = STEP_LABEL[order.driverStatus];
+  const headingToCustomer =
+    order.driverStatus === "picked_up" ||
+    order.driverStatus === "on_the_way" ||
+    order.driverStatus === "arrived_at_customer";
   const isPast = order.driverStatus === "delivered" || order.driverStatus === "cancelled" || order.driverStatus === "failed" || order.driverStatus === "rejected";
+
 
   return (
     <article
