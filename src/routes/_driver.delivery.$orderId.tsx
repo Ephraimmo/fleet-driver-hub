@@ -1,6 +1,6 @@
 import { createFileRoute, useParams } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
-import { Phone, MessageSquare, Navigation2, Store, User, ShieldCheck, Loader2, CheckCircle2, Circle, MapPin, Package } from "lucide-react";
+import { Phone, MessageSquare, Store, User, ShieldCheck, Loader2, CheckCircle2, Circle, MapPin, Package } from "lucide-react";
 import { toast } from "sonner";
 import {
   subscribeOrder,
@@ -16,6 +16,7 @@ import { useAuthDriver } from "@/hooks/useAuthDriver";
 import { useAppStore } from "@/stores/appStore";
 import { MapPanel, type MapMarker } from "@/components/driver/MapPanel";
 import { StatusPill } from "@/components/driver/StatusPill";
+import { NavigateButton } from "@/components/driver/NavigateButton";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -89,10 +90,13 @@ function ActiveDelivery() {
   if (driver && vm.driverId && vm.driverId !== driver.id)
     return <p className="surface-card p-6 text-center">This delivery is assigned to another driver.</p>;
 
-  const target =
-    vm.driverStatus === "picked_up" || vm.driverStatus === "on_the_way" || vm.driverStatus === "arrived_at_customer"
-      ? vm.deliveryAddress
-      : { latitude: vm.branch.latitude, longitude: vm.branch.longitude };
+  const headingToCustomer =
+    vm.driverStatus === "picked_up" ||
+    vm.driverStatus === "on_the_way" ||
+    vm.driverStatus === "arrived_at_customer";
+  const target = headingToCustomer
+    ? vm.deliveryAddress
+    : { latitude: vm.branch.latitude, longitude: vm.branch.longitude };
   const distance =
     position && target.latitude && target.longitude
       ? haversineKm(position, { latitude: target.latitude, longitude: target.longitude })
@@ -158,11 +162,6 @@ function ActiveDelivery() {
       }
     }
   };
-
-  const navUrl =
-    target.latitude && target.longitude
-      ? `https://www.google.com/maps/dir/?api=1&destination=${target.latitude},${target.longitude}&travelmode=driving`
-      : null;
 
   return (
     <div className="space-y-4 pb-8">
