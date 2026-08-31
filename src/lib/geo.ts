@@ -39,7 +39,7 @@ export interface MapDestination {
   address?: string | null | undefined;
 }
 
-/** Build a Google Maps directions URL (works on web, and deep-links into the app on mobile). */
+/** Build a Google Maps URL using the ?q=lat,lng format (drops a pin at the order location). */
 export function directionsUrl(dest: MapDestination, origin?: GeoPoint | null): string | null {
   const hasCoords =
     typeof dest.latitude === "number" &&
@@ -52,14 +52,7 @@ export function directionsUrl(dest: MapDestination, origin?: GeoPoint | null): s
       ? dest.address.trim()
       : null;
   if (!destination) return null;
-  const params = new URLSearchParams({
-    api: "1",
-    destination,
-    travelmode: "driving",
-    dir_action: "navigate",
-  });
-  if (origin) params.set("origin", `${origin.latitude},${origin.longitude}`);
-  return `https://www.google.com/maps/dir/?${params.toString()}`;
+  return `https://www.google.com/maps?q=${encodeURIComponent(destination)}`;
 }
 
 /** Launch Google Maps navigation in a new tab / the native app. */
