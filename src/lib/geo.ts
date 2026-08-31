@@ -34,9 +34,9 @@ export function formatMoney(value?: number | null) {
 }
 
 export interface MapDestination {
-  latitude?: number | null;
-  longitude?: number | null;
-  address?: string | null;
+  latitude?: number | null | undefined;
+  longitude?: number | null | undefined;
+  address?: string | null | undefined;
 }
 
 /** Build a Google Maps directions URL (works on web, and deep-links into the app on mobile). */
