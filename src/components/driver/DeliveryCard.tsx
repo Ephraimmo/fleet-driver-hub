@@ -4,7 +4,9 @@ import type { DriverOrderViewModel } from "@/types/forkfleet";
 import { formatKm, formatMoney, haversineKm } from "@/lib/geo";
 import { useAppStore } from "@/stores/appStore";
 import { StatusPill } from "./StatusPill";
+import { NavigateButton } from "./NavigateButton";
 import { Button } from "@/components/ui/button";
+
 
 const STEP_LABEL: Record<string, string> = {
   offered: "Step 1 of 5 · Accept & head to restaurant",
