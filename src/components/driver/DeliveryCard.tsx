@@ -114,6 +114,28 @@ export function DeliveryCard({
         )}
       </div>
 
+      {!isPast && (
+        <NavigateButton
+          className="h-12 w-full border-primary/30 text-primary"
+          label={headingToCustomer ? "Directions to customer" : "Directions to restaurant"}
+          destination={
+            headingToCustomer
+              ? {
+                  latitude: order.deliveryAddress.latitude,
+                  longitude: order.deliveryAddress.longitude,
+                  address: [order.deliveryAddress.street, order.deliveryAddress.city]
+                    .filter(Boolean)
+                    .join(", "),
+                }
+              : {
+                  latitude: order.branch.latitude,
+                  longitude: order.branch.longitude,
+                  address: `${order.restaurant.name} ${order.branch.name}`,
+                }
+          }
+        />
+      )}
+
       <div className="flex gap-2 pt-1">
         {onReject && (
           <Button variant="outline" size="lg" className="flex-1 h-12" disabled={busy} onClick={onReject}>
@@ -125,6 +147,7 @@ export function DeliveryCard({
             {busy ? "Accepting…" : "Accept delivery"}
           </Button>
         )}
+
         {!onAccept && !isPast && (
           <Button asChild size="lg" className="flex-1 h-12 text-base font-bold shadow-md">
             <Link to="/delivery/$orderId" params={{ orderId: order.id }}>
