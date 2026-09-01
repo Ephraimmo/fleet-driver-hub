@@ -1,13 +1,14 @@
 import { Navigation2 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
-import { useAppStore } from "@/stores/appStore";
-import { openDirections, type MapDestination } from "@/lib/geo";
+import { directionsUrl, type MapDestination } from "@/lib/geo";
 import { cn } from "@/lib/utils";
 
 /**
- * One-tap button that launches Google Maps turn-by-turn directions
- * from the driver's current GPS position to the given destination.
+ * One-tap button that launches Google Maps at the order's saved location.
+ *
+ * Rendered as a real anchor (not window.open) so it is never treated as a
+ * blocked pop-up inside the in-app/preview iframe or an embedded webview.
  */
 export function NavigateButton({
   destination,
@@ -22,23 +23,34 @@ export function NavigateButton({
   className?: string;
   size?: "sm" | "lg" | "default";
 }) {
-  const position = useAppStore((s) => s.position);
+  const url = directionsUrl(destination);
+
+  if (!url) {
+    return (
+      <Button
+        type="button"
+        variant={variant}
+        size={size}
+        className={cn("gap-2 font-semibold", className)}
+        onClick={() => toast.error("No location available for this stop yet.")}
+      >
+        <Navigation2 className="size-5" />
+        {label}
+      </Button>
+    );
+  }
 
   return (
-    <Button
-      type="button"
-      variant={variant}
-      size={size}
-      className={cn("gap-2 font-semibold", className)}
-      onClick={(e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        const ok = openDirections(destination, position);
-        if (!ok) toast.error("No location available for this stop yet.");
-      }}
-    >
-      <Navigation2 className="size-5" />
-      {label}
+    <Button asChild variant={variant} size={size} className={cn("gap-2 font-semibold", className)}>
+      <a
+        href={url}
+        target="_blank"
+        rel="noopener noreferrer"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <Navigation2 className="size-5" />
+        {label}
+      </a>
     </Button>
   );
 }
