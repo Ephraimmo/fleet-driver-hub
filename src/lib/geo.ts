@@ -39,21 +39,28 @@ export interface MapDestination {
   address?: string | null | undefined;
 }
 
-/** Build a Google Maps URL using the ?q=lat,lng format (drops a pin at the order location). */
-export function directionsUrl(dest: MapDestination, origin?: GeoPoint | null): string | null {
-  const hasCoords =
-    typeof dest.latitude === "number" &&
-    typeof dest.longitude === "number" &&
-    isFinite(dest.latitude) &&
-    isFinite(dest.longitude);
-  const destination = hasCoords
-    ? `${dest.latitude},${dest.longitude}`
-    : dest.address?.trim()
-      ? dest.address.trim()
-      : null;
-  if (!destination) return null;
-  return `https://www.google.com/maps?q=${encodeURIComponent(destination)}`;
+/**
+ * Build a Google Maps URL for the destination.
+ *
+ * Uses the canonical `/maps/place/<lat>,<lng>/@<lat>,<lng>,17z` format — the same
+ * shape Google itself produces when you share a pin. Commas are left unencoded
+ * (encoding them as %2C is what triggered ERR_BLOCKED_BY_RESPONSE).
+ */
+export function directionsUrl(dest: MapDestination, _origin?: GeoPoint | null): string | null {
+  const lat = typeof dest.latitude === "number" && isFinite(dest.latitude) ? dest.latitude : null;
+  const lng = typeof dest.longitude === "number" && isFinite(dest.longitude) ? dest.longitude : null;
+
+  if (lat !== null && lng !== null) {
+    return `https://www.google.com/maps/place/${lat},${lng}/@${lat},${lng},17z`;
+  }
+
+  const address = dest.address?.trim();
+  if (address) {
+    return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(address)}`;
+  }
+  return null;
 }
+
 
 /** Launch Google Maps navigation in a new tab / the native app. */
 export function openDirections(dest: MapDestination, origin?: GeoPoint | null): boolean {
