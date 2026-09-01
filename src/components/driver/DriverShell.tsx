@@ -123,41 +123,56 @@ export function DriverShell({ children }: { children: ReactNode }) {
 
   return (
     <div className="min-h-screen bg-background pb-28">
-      {!connected && (
-        <div className="sticky top-0 z-40 flex items-center justify-center gap-2 bg-destructive px-3 py-2 text-sm font-semibold text-destructive-foreground">
-          <WifiOff className="size-4" /> You&apos;re offline — updates will sync automatically
+      <main className="mx-auto w-full max-w-2xl p-4">{children}</main>
+
+      {(!connected || pending > 0) && (
+        <div className="pointer-events-none fixed inset-x-0 top-0 z-40 flex justify-center px-4 pt-3">
+          <div className="pointer-events-auto flex max-w-2xl items-center gap-2 rounded-full border border-border bg-surface/95 px-3 py-1.5 text-xs font-semibold shadow-elevate backdrop-blur">
+            {!connected ? (
+              <>
+                <WifiOff className="size-3.5 text-destructive" />
+                <span className="text-muted-foreground">Offline — syncing when back online</span>
+              </>
+            ) : (
+              <button
+                onClick={() => void flushQueue()}
+                className="flex items-center gap-2 text-muted-foreground"
+              >
+                <CloudUpload className="size-3.5 text-warning" />
+                <span>
+                  {pending} update{pending > 1 ? "s" : ""} queued
+                </span>
+                <span className="text-primary">Sync</span>
+              </button>
+            )}
+          </div>
         </div>
       )}
-      {pending > 0 && (
-        <button
-          onClick={() => void flushQueue()}
-          className="flex w-full items-center justify-center gap-2 bg-warning px-3 py-2 text-sm font-semibold text-warning-foreground"
-        >
-          <CloudUpload className="size-4" /> {pending} pending update{pending > 1 ? "s" : ""} — tap to sync
-        </button>
-      )}
-
-      <main className="mx-auto w-full max-w-2xl p-4">{children}</main>
 
       {activeDelivery && !pathname.startsWith("/delivery/") && (
         <Link
           to="/delivery/$orderId"
           params={{ orderId: activeDelivery.id }}
-          className="fixed inset-x-0 bottom-20 z-40 mx-auto flex max-w-2xl items-center justify-between gap-3 rounded-xl bg-primary px-4 py-3 text-primary-foreground shadow-elevate"
+          className="fixed inset-x-0 bottom-[4.75rem] z-40 mx-auto flex max-w-2xl items-center justify-between gap-3 rounded-xl border border-border bg-surface/95 px-4 py-2.5 shadow-elevate backdrop-blur"
           style={{ width: "calc(100% - 2rem)" }}
         >
-          <span className="flex items-center gap-2">
-            <Navigation className="size-5" />
-            <span className="text-left">
-              <span className="block text-xs font-semibold uppercase opacity-80">Active delivery</span>
-              <span className="block text-sm font-bold">
+          <span className="flex min-w-0 items-center gap-3">
+            <span className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-primary text-primary-foreground">
+              <Navigation className="size-4" />
+            </span>
+            <span className="min-w-0 text-left">
+              <span className="block text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+                Active delivery
+              </span>
+              <span className="block truncate text-sm font-bold">
                 {activeDelivery.orderNumber} · {activeDelivery.driverStatus.replace(/_/g, " ")}
               </span>
             </span>
           </span>
-          <span className="text-sm font-bold">Open →</span>
+          <span className="shrink-0 text-sm font-bold text-primary">Open →</span>
         </Link>
       )}
+
 
       <nav className="safe-bottom fixed inset-x-0 bottom-0 z-50 border-t border-border bg-surface">
         <div className="mx-auto flex max-w-2xl">
