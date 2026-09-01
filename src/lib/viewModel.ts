@@ -27,6 +27,21 @@ export function buildOrderViewModel(
   const branchAddress =
     (branchRecord?.["address"] as string) || (restaurant?.address as string) || "";
 
+  // Coordinates saved directly on the order document take priority (Firestore contract:
+  // branch_latitude / branch_longitude), then the branch record, then the restaurant.
+  const num = (v: unknown): number | undefined => {
+    const n = typeof v === "string" ? Number(v) : (v as number);
+    return typeof n === "number" && isFinite(n) ? n : undefined;
+  };
+  const branchLat =
+    num(order["branch_latitude"]) ??
+    num(branchRecord?.["latitude"]) ??
+    num(restaurant?.latitude);
+  const branchLng =
+    num(order["branch_longitude"]) ??
+    num(branchRecord?.["longitude"]) ??
+    num(restaurant?.longitude);
+
   const items = toArray<OrderItem>(order.items);
   const orderTimeline = (order.timeline as OrderTimelineEntry[]) ?? [];
   const payment: OrderPayment | null = order.payment ?? null;
@@ -43,16 +58,16 @@ export function buildOrderViewModel(
       id: restaurantId,
       name: order.restaurant_name ?? (restaurant?.name as string) ?? restaurantId,
       address: (restaurant?.address as string) ?? "",
-      latitude: (branchRecord?.["latitude"] as number) ?? (restaurant?.latitude as number),
-      longitude: (branchRecord?.["longitude"] as number) ?? (restaurant?.longitude as number),
+      latitude: branchLat as number,
+      longitude: branchLng as number,
       phone: (branchRecord?.["phone"] as string) ?? (restaurant?.phone as string),
     },
     branch: {
       id: branchId,
       name: branchName,
       address: branchAddress,
-      latitude: branchRecord?.["latitude"] as number,
-      longitude: branchRecord?.["longitude"] as number,
+      latitude: branchLat as number,
+      longitude: branchLng as number,
       phone: branchRecord?.["phone"] as string,
     },
     pickupAddress: branchAddress || (restaurant?.address as string) || "",

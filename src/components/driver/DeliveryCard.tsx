@@ -38,6 +38,7 @@ export function DeliveryCard({
   const earnings = order.deliveryFee + order.tip;
   const stepHint = STEP_LABEL[order.driverStatus];
   const headingToCustomer =
+    order.driverStatus === "arrived_at_restaurant" ||
     order.driverStatus === "picked_up" ||
     order.driverStatus === "on_the_way" ||
     order.driverStatus === "arrived_at_customer";

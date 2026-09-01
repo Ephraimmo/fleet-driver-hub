@@ -90,7 +90,10 @@ function ActiveDelivery() {
   if (driver && vm.driverId && vm.driverId !== driver.id)
     return <p className="surface-card p-6 text-center">This delivery is assigned to another driver.</p>;
 
+  // Before arriving at the restaurant → navigate to the restaurant/branch coords.
+  // Once the driver taps "Arrive at restaurant" → navigate to the customer's delivery coords.
   const headingToCustomer =
+    vm.driverStatus === "arrived_at_restaurant" ||
     vm.driverStatus === "picked_up" ||
     vm.driverStatus === "on_the_way" ||
     vm.driverStatus === "arrived_at_customer";
