@@ -1,7 +1,11 @@
-import { useEffect, useRef } from "react";
-import * as maplibregl from "maplibre-gl";
-import type { Map as MlMap, Marker } from "maplibre-gl";
-import "maplibre-gl/dist/maplibre-gl.css";
+import { useEffect, useMemo } from "react";
+import "leaflet/dist/leaflet.css";
+import L from "leaflet";
+import iconUrl from "leaflet/dist/images/marker-icon.png";
+import iconRetinaUrl from "leaflet/dist/images/marker-icon-2x.png";
+import shadowUrl from "leaflet/dist/images/marker-shadow.png";
+import { MapContainer, TileLayer, Marker, Popup, useMap } from "react-leaflet";
+import { MapPin } from "lucide-react";
 
 export interface MapMarker {
   latitude: number;
@@ -10,65 +14,82 @@ export interface MapMarker {
   kind: "driver" | "pickup" | "dropoff";
 }
 
-const STYLE = "https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json";
+// Default marker icons 404 under bundlers — fix once.
+L.Marker.prototype.options.icon = L.icon({
+  iconUrl,
+  iconRetinaUrl,
+  shadowUrl,
+  iconSize: [25, 41],
+  iconAnchor: [12, 41],
+  popupAnchor: [1, -34],
+  shadowSize: [41, 41],
+});
 
-export default function DeliveryMap({ markers, className }: { markers: MapMarker[]; className?: string }) {
-  const container = useRef<HTMLDivElement | null>(null);
-  const map = useRef<MlMap | null>(null);
-  const markerRefs = useRef<Marker[]>([]);
+const isValid = (m: MapMarker) =>
+  Number.isFinite(m.latitude) &&
+  Number.isFinite(m.longitude) &&
+  m.latitude >= -90 &&
+  m.latitude <= 90 &&
+  m.longitude >= -180 &&
+  m.longitude <= 180;
 
+function Recenter({ points }: { points: [number, number][] }) {
+  const map = useMap();
   useEffect(() => {
-    if (!container.current || map.current) return;
-    map.current = new maplibregl.Map({
-      container: container.current,
-      style: STYLE,
-      center: [markers[0]?.longitude ?? 28.0473, markers[0]?.latitude ?? -26.2041],
-      zoom: 12,
-      attributionControl: { compact: true },
-    });
-    map.current?.addControl(new maplibregl.NavigationControl({ showCompass: false }), "top-right");
-    return () => {
-      map.current?.remove();
-      map.current = null;
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  useEffect(() => {
-    const m = map.current;
-    if (!m) return;
-    markerRefs.current.forEach((mk) => mk.remove());
-    markerRefs.current = [];
-
-    const valid = markers.filter((mk) => isFinite(mk.latitude) && isFinite(mk.longitude));
-    valid.forEach((mk) => {
-      const el = document.createElement("div");
-      el.className = [
-        "flex items-center justify-center rounded-full border-2 text-[10px] font-bold uppercase",
-        "size-7",
-        mk.kind === "driver"
-          ? "bg-primary text-primary-foreground border-primary"
-          : mk.kind === "pickup"
-            ? "bg-warning text-warning-foreground border-warning"
-            : "bg-success text-success-foreground border-success",
-      ].join(" ");
-      el.textContent = mk.kind === "driver" ? "•" : mk.kind === "pickup" ? "P" : "D";
-      el.title = mk.label;
-      const marker = new maplibregl.Marker({ element: el })
-        .setLngLat([mk.longitude, mk.latitude])
-        .setPopup(new maplibregl.Popup({ offset: 16 }).setText(mk.label))
-        .addTo(m);
-      markerRefs.current.push(marker);
-    });
-
-    if (valid.length === 1) {
-      m.easeTo({ center: [valid[0]!.longitude, valid[0]!.latitude], zoom: 14 });
-    } else if (valid.length > 1) {
-      const bounds = new maplibregl.LngLatBounds();
-      valid.forEach((mk) => bounds.extend([mk.longitude, mk.latitude]));
-      m.fitBounds(bounds, { padding: 64, maxZoom: 15, duration: 600 });
+    if (points.length === 1) {
+      map.setView(points[0]!, 15);
+    } else if (points.length > 1) {
+      map.fitBounds(L.latLngBounds(points), { padding: [48, 48], maxZoom: 15 });
     }
-  }, [markers]);
+  }, [map, points]);
+  return null;
+}
 
-  return <div ref={container} className={className} />;
+export default function DeliveryMap({
+  markers,
+  className,
+}: {
+  markers: MapMarker[];
+  className?: string;
+}) {
+  const valid = useMemo(() => markers.filter(isValid), [markers]);
+  const points = useMemo<[number, number][]>(
+    () => valid.map((m) => [m.latitude, m.longitude]),
+    [valid],
+  );
+
+  if (valid.length === 0) {
+    return (
+      <div
+        className={`flex flex-col items-center justify-center gap-2 bg-muted/40 px-6 text-center ${className ?? ""}`}
+      >
+        <MapPin className="size-8 text-muted-foreground" />
+        <p className="text-sm text-muted-foreground">
+          No location coordinates available for this delivery yet.
+        </p>
+      </div>
+    );
+  }
+
+  return (
+    <div className={className} style={{ minHeight: 224 }}>
+      <MapContainer
+        center={points[0]!}
+        zoom={14}
+        scrollWheelZoom={false}
+        style={{ height: "100%", width: "100%", minHeight: 224 }}
+      >
+        <TileLayer
+          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+          attribution="&copy; OpenStreetMap contributors"
+        />
+        {valid.map((m, i) => (
+          <Marker key={`${m.kind}-${i}`} position={[m.latitude, m.longitude]}>
+            <Popup>{m.label}</Popup>
+          </Marker>
+        ))}
+        <Recenter points={points} />
+      </MapContainer>
+    </div>
+  );
 }
