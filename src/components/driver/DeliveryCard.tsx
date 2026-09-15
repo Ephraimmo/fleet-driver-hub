@@ -1,5 +1,5 @@
 import { Link } from "@tanstack/react-router";
-import { Bike, MapPin, Package, Store, Timer, ChevronRight, DollarSign, Navigation } from "lucide-react";
+import { ArrowRight, ChevronRight, MapPin, Package, Store, AlertTriangle } from "lucide-react";
 import type { DriverOrderViewModel } from "@/types/forkfleet";
 import { formatKm, formatMoney, haversineKm } from "@/lib/geo";
 import { useAppStore } from "@/stores/appStore";
@@ -7,15 +7,13 @@ import { StatusPill } from "./StatusPill";
 import { NavigateButton } from "./NavigateButton";
 import { Button } from "@/components/ui/button";
 
-
-const STEP_LABEL: Record<string, string> = {
-  offered: "Step 1 of 5 · Accept & head to restaurant",
-  assigned: "Step 1 of 5 · Head to restaurant",
-  arrived_at_restaurant: "Step 2 of 5 · Verify & pickup order",
-  picked_up: "Step 3 of 5 · Start delivery",
-  on_the_way: "Step 4 of 5 · Head to customer",
-  arrived_at_customer: "Step 5 of 5 · Complete delivery",
-  delivered: "Completed · Thanks!",
+const NEXT_STEP: Record<string, string> = {
+  offered: "Accept to start this delivery",
+  assigned: "Drive to the restaurant",
+  arrived_at_restaurant: "Check the order, then pick it up",
+  picked_up: "Start the drive to the customer",
+  on_the_way: "Drive to the customer",
+  arrived_at_customer: "Hand over and complete",
 };
 
 export function DeliveryCard({
@@ -36,141 +34,145 @@ export function DeliveryCard({
       : null;
   const pickupKm = position && pickupPoint ? haversineKm(position, pickupPoint) : null;
   const earnings = order.deliveryFee + order.tip;
-  const stepHint = STEP_LABEL[order.driverStatus];
+  const nextStep = NEXT_STEP[order.driverStatus];
   const headingToCustomer =
     order.driverStatus === "arrived_at_restaurant" ||
     order.driverStatus === "picked_up" ||
     order.driverStatus === "on_the_way" ||
     order.driverStatus === "arrived_at_customer";
-  const isPast = order.driverStatus === "delivered" || order.driverStatus === "cancelled" || order.driverStatus === "failed" || order.driverStatus === "rejected";
+  const isPast =
+    order.driverStatus === "delivered" ||
+    order.driverStatus === "cancelled" ||
+    order.driverStatus === "failed" ||
+    order.driverStatus === "rejected";
+  const note = order.specialInstructions || order.deliveryInstructions;
+  const dropoff = [order.deliveryAddress.street, order.deliveryAddress.city]
+    .filter(Boolean)
+    .join(", ");
 
+  if (isPast) {
+    return (
+      <Link
+        to="/delivery/$orderId"
+        params={{ orderId: order.id }}
+        className="surface-card flex items-center gap-3 p-4 transition-colors hover:bg-muted/40"
+      >
+        <div className="min-w-0 flex-1">
+          <p className="truncate font-display text-base font-bold">{order.orderNumber}</p>
+          <p className="truncate text-sm text-muted-foreground">{order.restaurant.name}</p>
+        </div>
+        <div className="shrink-0 text-right">
+          <p className="font-bold">{formatMoney(earnings)}</p>
+          <StatusPill status={order.driverStatus} className="mt-1" />
+        </div>
+        <ChevronRight className="size-4 shrink-0 text-muted-foreground" />
+      </Link>
+    );
+  }
 
   return (
-    <article
-      className={`surface-card group space-y-3 p-4 shadow-elevate transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg ${
-        isPast ? "opacity-85" : ""
-      }`}
-    >
-      <header className="flex items-start justify-between gap-3">
+    <article className="surface-card overflow-hidden shadow-elevate transition-shadow hover:shadow-lg">
+      <header className="flex items-start justify-between gap-3 p-4 pb-3">
         <div className="min-w-0">
-          <div className="flex items-center gap-2">
-            <p className="font-display text-xl font-bold leading-tight tracking-tight">
-              {order.orderNumber}
-            </p>
-          </div>
-          <p className="mt-0.5 flex items-center gap-1 truncate text-sm text-muted-foreground">
+          <p className="font-display text-xl font-bold leading-tight">{order.orderNumber}</p>
+          <p className="mt-1 flex items-center gap-1.5 truncate text-sm text-muted-foreground">
             <Store className="size-3.5 shrink-0" />
-            <span className="truncate">
-              {order.restaurant.name} · {order.branch.name}
-            </span>
+            <span className="truncate">{order.restaurant.name}</span>
           </p>
         </div>
-        <StatusPill status={order.driverStatus} />
+        <div className="shrink-0 text-right">
+          <p className="font-display text-2xl font-bold leading-none text-primary">
+            {formatMoney(earnings)}
+          </p>
+          <StatusPill status={order.driverStatus} className="mt-1.5" />
+        </div>
       </header>
 
-      {stepHint && !isPast && (
-        <div className="rounded-lg border border-primary/15 bg-primary/5 px-3 py-1.5 text-xs font-semibold text-primary">
-          {stepHint}
-        </div>
-      )}
-
-      <div className="grid grid-cols-3 gap-2">
-        <div className="stat-tile">
-          <div className="flex items-center justify-center gap-1 text-[11px] text-muted-foreground">
-            <Navigation className="size-3" />
-            Pickup
-          </div>
-          <p className="font-bold">{formatKm(pickupKm)}</p>
-        </div>
-        <div className="stat-tile">
-          <div className="flex items-center justify-center gap-1 text-[11px] text-muted-foreground">
-            <MapPin className="size-3" />
-            Drop-off
-          </div>
-          <p className="font-bold">{formatKm(order.distanceKm)}</p>
-        </div>
-        <div className="stat-tile ring-1 ring-primary/20">
-          <div className="flex items-center justify-center gap-1 text-[11px] text-primary">
-            <DollarSign className="size-3" />
-            Payout
-          </div>
-          <p className="font-bold text-primary">{formatMoney(earnings)}</p>
-        </div>
-      </div>
-
-      <div className="space-y-1.5 text-sm">
-        <p className="flex items-start gap-2 text-muted-foreground">
-          <MapPin className="mt-0.5 size-4 shrink-0 text-primary" />
-          <span className="line-clamp-2">
-            {order.deliveryAddress.street ?? "—"}
-            {order.deliveryAddress.city ? `, ${order.deliveryAddress.city}` : ""}
+      <div className="space-y-2.5 px-4 pb-4">
+        <div className="flex items-center gap-2 rounded-lg bg-muted/50 px-3 py-2 text-sm">
+          <span className="flex min-w-0 items-center gap-1.5">
+            <Store className="size-4 shrink-0 text-muted-foreground" />
+            <span className="font-semibold">{formatKm(pickupKm)}</span>
           </span>
+          <ArrowRight className="size-4 shrink-0 text-muted-foreground" />
+          <span className="flex min-w-0 items-center gap-1.5">
+            <MapPin className="size-4 shrink-0 text-primary" />
+            <span className="font-semibold">{formatKm(order.distanceKm)}</span>
+          </span>
+          <span className="ml-auto flex shrink-0 items-center gap-1.5 text-muted-foreground">
+            <Package className="size-4" />
+            {order.items.length}
+          </span>
+        </div>
+
+        <p className="flex items-start gap-2 text-sm text-muted-foreground">
+          <MapPin className="mt-0.5 size-4 shrink-0 text-primary" />
+          <span className="line-clamp-2">{dropoff || "Address not provided"}</span>
         </p>
-        <p className="flex items-center gap-2 text-muted-foreground">
-          <Package className="size-4 shrink-0" /> {order.items.length} item
-          {order.items.length === 1 ? "" : "s"} · {order.paymentStatus}
-        </p>
-        {(order.specialInstructions || order.deliveryInstructions) && (
-          <div className="rounded-lg border border-warning/20 bg-warning/5 p-2.5 text-warning">
-            <p className="flex items-start gap-2 text-xs font-medium">
-              <Timer className="mt-0.5 size-3.5 shrink-0" />
-              <span className="leading-snug">
-                {order.specialInstructions || order.deliveryInstructions}
-              </span>
-            </p>
-          </div>
+
+        {note && (
+          <p className="flex items-start gap-2 rounded-lg bg-warning/10 px-3 py-2 text-xs leading-snug text-warning">
+            <AlertTriangle className="mt-0.5 size-3.5 shrink-0" />
+            <span className="line-clamp-2">{note}</span>
+          </p>
         )}
       </div>
 
-      {!isPast && (
-        <NavigateButton
-          className="h-12 w-full border-primary/30 text-primary"
-          label={headingToCustomer ? "Directions to customer" : "Directions to restaurant"}
-          destination={
-            headingToCustomer
-              ? {
-                  latitude: order.deliveryAddress.latitude,
-                  longitude: order.deliveryAddress.longitude,
-                  address: [order.deliveryAddress.street, order.deliveryAddress.city]
-                    .filter(Boolean)
-                    .join(", "),
-                }
-              : {
-                  latitude: order.branch.latitude,
-                  longitude: order.branch.longitude,
-                  address: `${order.restaurant.name} ${order.branch.name}`,
-                }
-          }
-        />
-      )}
-
-      <div className="flex gap-2 pt-1">
-        {onReject && (
-          <Button variant="outline" size="lg" className="flex-1 h-12" disabled={busy} onClick={onReject}>
-            Reject
-          </Button>
-        )}
-        {onAccept && (
-          <Button size="lg" className="flex-1 h-12 text-base font-bold shadow-md" disabled={busy} onClick={onAccept}>
-            {busy ? "Accepting…" : "Accept delivery"}
-          </Button>
+      <div className="space-y-2 border-t border-border bg-muted/30 p-4">
+        {nextStep && (
+          <p className="text-center text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+            {nextStep}
+          </p>
         )}
 
-        {!onAccept && !isPast && (
-          <Button asChild size="lg" className="flex-1 h-12 text-base font-bold shadow-md">
-            <Link to="/delivery/$orderId" params={{ orderId: order.id }}>
-              <Bike className="mr-1 size-5" /> Manage delivery
-              <ChevronRight className="size-4" />
-            </Link>
-          </Button>
-        )}
-        {!onAccept && isPast && (
-          <Button asChild variant="outline" size="lg" className="flex-1 h-12 text-sm">
-            <Link to="/delivery/$orderId" params={{ orderId: order.id }}>
-              View details
-              <ChevronRight className="size-4" />
-            </Link>
-          </Button>
+        {onAccept ? (
+          <div className="flex gap-2">
+            {onReject && (
+              <Button
+                variant="outline"
+                size="lg"
+                className="h-14 flex-1 text-base"
+                disabled={busy}
+                onClick={onReject}
+              >
+                Reject
+              </Button>
+            )}
+            <Button
+              size="lg"
+              className="h-14 flex-[2] text-base font-bold"
+              disabled={busy}
+              onClick={onAccept}
+            >
+              {busy ? "Accepting…" : "Accept delivery"}
+            </Button>
+          </div>
+        ) : (
+          <div className="space-y-2">
+            <Button asChild size="lg" className="h-14 w-full text-base font-bold">
+              <Link to="/delivery/$orderId" params={{ orderId: order.id }}>
+                Continue delivery
+                <ChevronRight className="size-5" />
+              </Link>
+            </Button>
+            <NavigateButton
+              className="h-12 w-full border-primary/30 text-primary"
+              label={headingToCustomer ? "Directions to customer" : "Directions to restaurant"}
+              destination={
+                headingToCustomer
+                  ? {
+                      latitude: order.deliveryAddress.latitude,
+                      longitude: order.deliveryAddress.longitude,
+                      address: dropoff,
+                    }
+                  : {
+                      latitude: order.branch.latitude,
+                      longitude: order.branch.longitude,
+                      address: `${order.restaurant.name} ${order.branch.name}`,
+                    }
+              }
+            />
+          </div>
         )}
       </div>
     </article>
