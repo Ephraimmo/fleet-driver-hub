@@ -9,7 +9,8 @@ import { Button } from "@/components/ui/button";
 
 const NEXT_STEP: Record<string, string> = {
   offered: "Accept to start this delivery",
-  assigned: "Drive to the restaurant",
+  accepted: "Drive to the restaurant",
+  assigned: "Ready to pick up — drive to the restaurant",
   arrived_at_restaurant: "Check the order, then pick it up",
   picked_up: "Start the drive to the customer",
   on_the_way: "Drive to the customer",
@@ -36,7 +37,6 @@ export function DeliveryCard({
   const earnings = order.deliveryFee + order.tip;
   const nextStep = NEXT_STEP[order.driverStatus];
   const headingToCustomer =
-    order.driverStatus === "arrived_at_restaurant" ||
     order.driverStatus === "picked_up" ||
     order.driverStatus === "on_the_way" ||
     order.driverStatus === "arrived_at_customer";
