@@ -43,7 +43,7 @@ export function buildOrderViewModel(
     num(restaurant?.longitude);
 
   const items = toArray<OrderItem>(order.items);
-  const orderTimeline = (order.timeline as OrderTimelineEntry[]) ?? [];
+  const orderTimeline = toArray<OrderTimelineEntry>(order.timeline);
   const payment: OrderPayment | null = order.payment ?? null;
 
   return {
