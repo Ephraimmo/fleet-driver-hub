@@ -81,14 +81,18 @@ function DeliveriesPage() {
               description="New orders from your authorized restaurants and branches will appear here the moment they're ready for pickup."
             />
           ) : (
-            available.map((o) => (
-              <DeliveryCard
-                key={o.id}
-                order={o}
-                onAccept={() => handleAccept(o)}
-                busy={busyId === o.id}
-              />
-            ))
+            available.map((o) =>
+              o.driverId ? (
+                <DeliveryCard key={o.id} order={o} />
+              ) : (
+                <DeliveryCard
+                  key={o.id}
+                  order={o}
+                  onAccept={() => handleAccept(o)}
+                  busy={busyId === o.id}
+                />
+              ),
+            )
           )}
         </TabsContent>
 
