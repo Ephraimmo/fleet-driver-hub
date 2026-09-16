@@ -91,8 +91,8 @@ export function useDriverOrders() {
   );
 
   useEffect(() => {
-    setActiveOrderId(active[0]?.id ?? null);
-  }, [active, setActiveOrderId]);
+    setActiveOrderId(live[0]?.id ?? null);
+  }, [live, setActiveOrderId]);
 
   return { loading, models, mine, active, available, history, restaurants };
 }
