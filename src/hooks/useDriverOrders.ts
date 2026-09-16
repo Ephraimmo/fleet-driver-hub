@@ -94,5 +94,5 @@ export function useDriverOrders() {
     setActiveOrderId(live[0]?.id ?? null);
   }, [live, setActiveOrderId]);
 
-  return { loading, models, mine, active, available, history, restaurants };
+  return { loading, models, mine, live, active, pendingPickup, available, history, restaurants };
 }
