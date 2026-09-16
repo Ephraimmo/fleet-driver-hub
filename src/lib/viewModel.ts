@@ -132,7 +132,7 @@ function resolveDriverStatus(order: Order): DeliveryStatus {
   const raw = order["driver_status"];
   if (typeof raw === "string") candidates.push(raw);
   if (order.status) candidates.push(String(order.status));
-  const timeline = (order.timeline as OrderTimelineEntry[]) ?? [];
+  const timeline = toArray<OrderTimelineEntry>(order.timeline);
   for (const entry of timeline) if (entry?.status) candidates.push(String(entry.status));
 
   for (const c of candidates) {
