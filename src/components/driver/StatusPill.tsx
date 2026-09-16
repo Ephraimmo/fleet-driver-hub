@@ -18,7 +18,7 @@ const TONE: Record<string, string> = {
 const LABEL: Record<string, string> = {
   offered: "Available",
   accepted: "Accepted",
-  assigned: "Assigned",
+  assigned: "Ready to pick up",
   arrived_at_restaurant: "At restaurant",
   picked_up: "Picked up",
   on_the_way: "On the way",
