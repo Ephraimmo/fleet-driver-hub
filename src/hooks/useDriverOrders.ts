@@ -40,14 +40,34 @@ export function useDriverOrders() {
     [models, driver],
   );
 
-  const active = useMemo(
-    () => mine.filter((m) => ACTIVE_STATUSES.includes(m.driverStatus) && m.orderStatus !== "cancelled" && m.orderStatus !== "rejected" && m.orderStatus !== "refunded"),
+  const live = useMemo(
+    () =>
+      mine.filter(
+        (m) =>
+          ACTIVE_STATUSES.includes(m.driverStatus) &&
+          m.orderStatus !== "cancelled" &&
+          m.orderStatus !== "rejected" &&
+          m.orderStatus !== "refunded",
+      ),
     [mine],
   );
 
+  // Assigned to me but not yet picked up → stays in the Available tab (ready to pick up).
+  const PRE_PICKUP = ["offered", "accepted", "assigned", "arrived_at_restaurant"];
+  const pendingPickup = useMemo(
+    () => live.filter((m) => PRE_PICKUP.includes(m.driverStatus)),
+    [live],
+  );
+
+  // Picked up and on the road → Active tab.
+  const active = useMemo(
+    () => live.filter((m) => !PRE_PICKUP.includes(m.driverStatus)),
+    [live],
+  );
+
   const available = useMemo(() => {
-    if (!driver) return [];
-    return models.filter((m) => {
+    if (!driver) return pendingPickup;
+    const offers = models.filter((m) => {
       const o = m.raw;
       if (o.driver_id) return false;
       if (!OFFERABLE_ORDER_STATUSES.includes(String(o.status))) return false;
@@ -59,7 +79,8 @@ export function useDriverOrders() {
         orderBranchId(o),
       );
     });
-  }, [models, driver, activeAssignments]);
+    return [...pendingPickup, ...offers];
+  }, [models, driver, activeAssignments, pendingPickup]);
 
   const history = useMemo(
     () =>
