@@ -181,14 +181,18 @@ function HomePage() {
             description="Nothing is ready for pickup at your authorized branches right now. Offers appear here instantly."
           />
         ) : (
-          available.slice(0, 2).map((o) => (
-            <DeliveryCard
-              key={o.id}
-              order={o}
-              onAccept={() => handleAccept(o)}
-              busy={busyId === o.id}
-            />
-          ))
+          available.slice(0, 2).map((o) =>
+            o.driverId ? (
+              <DeliveryCard key={o.id} order={o} />
+            ) : (
+              <DeliveryCard
+                key={o.id}
+                order={o}
+                onAccept={() => handleAccept(o)}
+                busy={busyId === o.id}
+              />
+            ),
+          )
         )}
       </section>
 
