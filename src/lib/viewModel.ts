@@ -97,6 +97,66 @@ export function buildOrderViewModel(
   };
 }
 
+/** Progress ranking so the furthest-along signal always wins. */
+const PROGRESS_RANK: Record<string, number> = {
+  pending: 0,
+  offered: 0,
+  accepted: 1,
+  assigned: 1,
+  arrived_at_restaurant: 2,
+  picked_up: 3,
+  collected: 3,
+  out_for_delivery: 4,
+  in_transit: 4,
+  on_the_way: 4,
+  arrived_at_customer: 5,
+  delivered: 6,
+  completed: 6,
+};
+
+const NORMALIZE: Record<string, DeliveryStatus> = {
+  collected: "picked_up",
+  out_for_delivery: "on_the_way",
+  in_transit: "on_the_way",
+  completed: "delivered",
+};
+
+const TERMINAL: DeliveryStatus[] = ["cancelled", "failed", "rejected"];
+
+/**
+ * Combines driver_status, order status and the order timeline so a pickup
+ * recorded anywhere (driver app, restaurant dashboard, admin) is reflected live.
+ */
+function resolveDriverStatus(order: Order): DeliveryStatus {
+  const candidates: string[] = [];
+  const raw = order["driver_status"];
+  if (typeof raw === "string") candidates.push(raw);
+  if (order.status) candidates.push(String(order.status));
+  const timeline = (order.timeline as OrderTimelineEntry[]) ?? [];
+  for (const entry of timeline) if (entry?.status) candidates.push(String(entry.status));
+
+  for (const c of candidates) {
+    const normalized = (NORMALIZE[c] ?? c) as DeliveryStatus;
+    if (TERMINAL.includes(normalized)) return normalized;
+  }
+
+  let best: DeliveryStatus | null = null;
+  let bestRank = -1;
+  for (const c of candidates) {
+    const rank = PROGRESS_RANK[c];
+    if (rank === undefined) continue;
+    if (rank > bestRank) {
+      bestRank = rank;
+      best = (NORMALIZE[c] ?? c) as DeliveryStatus;
+    }
+  }
+  if (best) {
+    if (bestRank <= 1) return order.driver_id ? "assigned" : "offered";
+    return best;
+  }
+  return inferDriverStatus(order);
+}
+
 function inferDriverStatus(order: Order): DeliveryStatus {
   const rawStatus = String(order.status);
   switch (rawStatus) {
