@@ -84,7 +84,7 @@ export function buildOrderViewModel(
     paymentMethod: order.payment?.method ?? order.payment_method ?? "unknown",
     payment,
     orderStatus: order.status,
-    driverStatus: (order["driver_status"] as DeliveryStatus) ?? inferDriverStatus(order),
+    driverStatus: resolveDriverStatus(order),
     timeline: opts.events ?? [],
     orderTimeline,
     eta: order.eta_minutes ?? null,
